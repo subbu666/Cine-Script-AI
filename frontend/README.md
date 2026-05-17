@@ -122,6 +122,8 @@ cinescript_frontend/
     │
     ├── styles.css                    # Design system tokens (gold / black)
     ├── router.tsx
+    ├── start.ts
+    ├── server.ts
     └── routeTree.gen.ts              # ⚠️ Auto-generated — do not edit
 ```
 
