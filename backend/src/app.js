@@ -90,6 +90,19 @@ const createApp = () => {
     });
   });
 
+  // ===== Base Route =====
+  app.get("/", (req, res) => {
+    res.status(200).json({
+      success: true,
+      message: "Cine Script AI API is Running🔥",
+      data: {
+        version: "1.0.0",
+        docs: "/api",
+        health: "/api/health",
+      },
+    });
+  });
+
   // ===== API Routes =====
   app.use("/api/auth", authRoutes);
   app.use("/api/scripts", scriptRoutes); // FIX: changed from '/api/script' to '/api/scripts'
