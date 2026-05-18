@@ -3,12 +3,12 @@
 ```
 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 ░                                                                         ░
-░   ██████╗██╗███╗   ██╗███████╗███████╗ ██████╗██████╗ ██╗██████╗████████╗  ░
-░  ██╔════╝██║████╗  ██║██╔════╝██╔════╝██╔════╝██╔══██╗██║██╔══██╗╚══██╔══╝ ░
-░  ██║     ██║██╔██╗ ██║█████╗  ███████╗██║     ██████╔╝██║██████╔╝   ██║    ░
-░  ██║     ██║██║╚██╗██║██╔══╝  ╚════██║██║     ██╔══██╗██║██╔═══╝    ██║    ░
-░  ╚██████╗██║██║ ╚████║███████╗███████║╚██████╗██║  ██║██║██║        ██║    ░
-░   ╚═════╝╚═╝╚═╝  ╚═══╝╚══════╝╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝╚═╝        ╚═╝   ░
+░    ██████╗██╗███╗   ██╗███████╗███████╗ ██████╗██████╗ ██╗██████╗████████╗  ░
+░   ██╔════╝██║████╗  ██║██╔════╝██╔════╝██╔════╝██╔══██╗██║██╔══██╗╚══██╔══╝ ░
+░   ██║     ██║██╔██╗ ██║█████╗  ███████╗██║     ██████╔╝██║██████╔╝   ██║    ░
+░   ██║     ██║██║╚██╗██║██╔══╝  ╚════██║██║     ██╔══██╗██║██╔═══╝    ██║    ░
+░   ╚██████╗██║██║ ╚████║███████╗███████║╚██████╗██║  ██║██║██║        ██║    ░
+░    ╚═════╝╚═╝╚═╝  ╚═══╝╚══════╝╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝╚═╝        ╚═╝    ░
 ░                                                                         ░
 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 ```
@@ -25,13 +25,11 @@
 [![Groq](https://img.shields.io/badge/AI-Groq%20Llama%203.3-F55036?style=for-the-badge)](https://console.groq.com)
 [![Tailwind](https://img.shields.io/badge/Tailwind-CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![Framer](https://img.shields.io/badge/Framer-Motion-0055FF?style=for-the-badge&logo=framer&logoColor=white)](https://framer.com/motion)
-[![Cloudflare](https://img.shields.io/badge/Frontend-Cloudflare%20Workers-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
-[![Render](https://img.shields.io/badge/Backend-Render-46E3B7?style=for-the-badge&logo=render&logoColor=black)](https://render.com)
 [![License](https://img.shields.io/badge/License-MIT-gold?style=for-the-badge)](LICENSE)
 
 <br/>
 
-[✨ Features](#-features) · [🏗 Architecture](#-architecture) · [⚡ Quick Start](#-quick-start) · [📡 API Reference](#-api-reference) · [🎨 Design System](#-design-system) · [🔐 Security](#-security) · [🛠 External Services](#-external-service-setup) · [🚀 Deployment](#-deployment) · [📦 Environment Reference](#-full-environment-reference)
+[✨ Features](#-features) · [🏗 Architecture](#-architecture) · [⚡ Quick Start](#-quick-start) · [📡 API Reference](#-api-reference) · [🎨 Design System](#-design-system) · [🔐 Security](#-security) · [🚀 Deployment](#-deployment)
 
 </div>
 
@@ -81,11 +79,10 @@ The project is a **monorepo** with two packages:
 ## 🏗 Architecture
 
 ```
-Cine-Script-AI/                      # Monorepo root
+cinescript/
 ├── frontend/                        # React 19 + TanStack Start
 │   ├── src/
 │   │   ├── routes/                  # File-based routing
-│   │   │   ├── __root.tsx           # Root layout — HTML shell + providers
 │   │   │   ├── index.tsx            # / — landing + generator
 │   │   │   ├── login.tsx            # /login
 │   │   │   ├── signup.tsx           # /signup
@@ -106,13 +103,7 @@ Cine-Script-AI/                      # Monorepo root
 │   │   ├── lib/
 │   │   │   ├── api.ts               # Central API client
 │   │   │   └── mockScript.ts        # Local fallback generator
-│   │   ├── styles.css               # Design tokens (gold/black theme)
-│   │   ├── router.tsx
-│   │   ├── start.ts
-│   │   ├── server.ts                # SSR entry — Cloudflare Workers
-│   │   └── routeTree.gen.ts         # ⚠️ Auto-generated — do not edit
-│   ├── wrangler.jsonc               # Cloudflare Workers config
-│   ├── vite.config.ts
+│   │   └── styles.css               # Design tokens (gold/black theme)
 │   └── .env                         # VITE_API_BASE_URL
 │
 └── backend/                         # Node.js + Express + MongoDB
@@ -146,21 +137,21 @@ Browser
   │
   ├─► React UI (TanStack Router)
   │       │
-  │       ├─► src/lib/api.ts  ──── JWT Bearer token ────►  Express API
-  │       │                                                     │
-  │       └─► src/lib/mockScript.ts  ◄── fallback              ├─► Auth Middleware
-  │               (no backend)                                  ├─► Rate Limiter
-  │                                                             ├─► Joi Validator
-  │                                                             │
-  │                                                             ├─► authController
-  │                                                             │      ├─► MongoDB (User/OTP)
-  │                                                             │      └─► Brevo (OTP Email)
-  │                                                             │
-  │                                                             └─► scriptController
-  │                                                                    ├─► Groq Llama 3.3 70B
-  │                                                                    └─► MongoDB (Script)
+  │       ├─► src/lib/api.ts  ──────── JWT Bearer token ──────────►  Express API
+  │       │                                                              │
+  │       └─► src/lib/mockScript.ts  ◄── fallback (no backend)          ├─► Auth Middleware
+  │                                                                      ├─► Rate Limiter
+  │                                                                      ├─► Joi Validator
+  │                                                                      │
+  │                                                                      ├─► authController
+  │                                                                      │       ├─► MongoDB (User/OTP)
+  │                                                                      │       └─► Brevo (OTP Email)
+  │                                                                      │
+  │                                                                      └─► scriptController
+  │                                                                              ├─► Groq Llama 3.3 70B
+  │                                                                              └─► MongoDB (Script)
   │
-  ◄──────────────── JSON { success, message, data, meta } ─────────────────
+  ◄──────────────────────── JSON { success, message, data, meta } ──────────────
 ```
 
 ---
@@ -179,9 +170,11 @@ Browser
 ### 1 — Clone
 
 ```bash
-git clone https://github.com/subbu666/Cine-Script-AI.git
-cd Cine-Script-AI
+git clone https://github.com/subbu666/cine-script-ai.git
+cd cinescript
 ```
+
+---
 
 ### 2 — Configure Backend
 
@@ -195,7 +188,7 @@ cp .env.example .env
 
 NODE_ENV=development
 PORT=5000
-CLIENT_URL=http://localhost:5173
+CLIENT_URL=http://localhost:8080
 
 MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/cinescript
 JWT_SECRET=your-super-secret-jwt-key
@@ -213,6 +206,8 @@ npm install
 npm run dev        # starts on http://localhost:5000
 ```
 
+---
+
 ### 3 — Configure Frontend
 
 ```bash
@@ -226,11 +221,11 @@ VITE_API_BASE_URL=http://localhost:5000/api
 ```
 
 ```bash
-bun install
-bun run dev        # starts on http://localhost:5173
+npm install
+npm run dev        # starts on http://localhost:8080
 ```
 
-> **No backend yet?** Leave `VITE_API_BASE_URL` blank — the frontend silently falls back to its local mock generator. The full UI works without a running server.
+> **No backend yet?** Leave `VITE_API_BASE_URL` blank. The frontend silently falls back to its local mock generator — the full UI works without a running server.
 
 ---
 
@@ -367,6 +362,8 @@ All errors return:
 
 ### Forgot Password — 3-Phase Wizard
 
+The `/forgot-password` page guides users through three discrete phases. During development, the generated OTP is returned as `devOtp` in the response so QA can complete the flow without an inbox. **Remove `devOtp` before production.**
+
 <details>
 <summary><strong>Phase 1 — POST /auth/forgot-password</strong> — Send OTP</summary>
 
@@ -412,6 +409,8 @@ Always returns success to prevent account enumeration.
 <details>
 <summary><strong>Phase 3 — POST /auth/reset-password</strong> — Set new password</summary>
 
+Consumes the `resetToken`, updates the password, invalidates all existing sessions.
+
 **Request**
 
 ```json
@@ -432,19 +431,19 @@ Always returns success to prevent account enumeration.
 
 ### Script Routes
 
-| Method   | Endpoint                | Description              | Auth Required |
-| -------- | ----------------------- | ------------------------ | :-----------: |
-| `POST`   | `/scripts/generate`     | Generate a new script    |      ✅       |
-| `GET`    | `/scripts/history`      | Paginated script history |      ✅       |
-| `GET`    | `/scripts/stats`        | User statistics          |      ✅       |
-| `GET`    | `/scripts/:id`          | Fetch a single script    |      ✅       |
-| `PATCH`  | `/scripts/:id/favorite` | Toggle favorite          |      ✅       |
-| `DELETE` | `/scripts/:id`          | Delete a script          |      ✅       |
+| Method   | Endpoint               | Description              | Auth Required |
+| -------- | ---------------------- | ------------------------ | :-----------: |
+| `POST`   | `/script/generate`     | Generate a new script    |      ✅       |
+| `GET`    | `/script/history`      | Paginated script history |      ✅       |
+| `GET`    | `/script/stats`        | User statistics          |      ✅       |
+| `GET`    | `/script/:id`          | Fetch a single script    |      ✅       |
+| `PATCH`  | `/script/:id/favorite` | Toggle favorite          |      ✅       |
+| `DELETE` | `/script/:id`          | Delete a script          |      ✅       |
 
 **Available moods:** `dramatic` · `comedy` · `romantic` · `action` · `thriller` · `horror` · `inspirational` · `noir`
 
 <details>
-<summary><strong>POST /scripts/generate</strong> — Generate a screenplay</summary>
+<summary><strong>POST /script/generate</strong> — Generate a screenplay</summary>
 
 **Request**
 
@@ -472,7 +471,7 @@ Always returns success to prevent account enumeration.
       }
     ],
     "sceneCount": 4,
-    "createdAt": "2026-05-17T10:30:00.000Z",
+    "createdAt": "2026-05-16T10:30:00.000Z",
     "generationTimeMs": 2341
   }
 }
@@ -483,7 +482,7 @@ Always returns success to prevent account enumeration.
 </details>
 
 <details>
-<summary><strong>GET /scripts/history</strong> — Paginated history with mood filter</summary>
+<summary><strong>GET /script/history</strong> — Paginated history with mood filter</summary>
 
 **Query Parameters**
 
@@ -499,7 +498,12 @@ Always returns success to prevent account enumeration.
 {
   "success": true,
   "data": [
-    { "title": "Jab Tak Tum Ho", "mood": "dramatic", "isFavorite": false }
+    {
+      "title": "Jab Tak Tum Ho",
+      "mood": "dramatic",
+      "isFavorite": false,
+      "...": "..."
+    }
   ],
   "meta": {
     "pagination": {
@@ -517,7 +521,7 @@ Always returns success to prevent account enumeration.
 </details>
 
 <details>
-<summary><strong>GET /scripts/stats</strong> — User statistics</summary>
+<summary><strong>GET /script/stats</strong> — User statistics</summary>
 
 **Response `200`**
 
@@ -558,6 +562,39 @@ X-RateLimit-Reset: 1715856000
 
 ---
 
+## 🔐 Security
+
+| Mechanism        | Implementation                                            |
+| ---------------- | --------------------------------------------------------- |
+| Password hashing | bcrypt · 12 salt rounds                                   |
+| OTP hashing      | bcrypt · 10 salt rounds                                   |
+| OTP lifetime     | 5 minutes · auto-deleted after use                        |
+| OTP limits       | Max 5 verification attempts · max 3 resends               |
+| JWT delivery     | HTTP-only cookies + `Authorization: Bearer` header        |
+| Cookie flags     | `httpOnly` · `secure` · `sameSite=strict`                 |
+| Security headers | Helmet.js                                                 |
+| Input validation | Joi schemas on every endpoint                             |
+| CORS             | Restricted to `CLIENT_URL` only                           |
+| Rate limiting    | Per-IP and per-email on sensitive routes                  |
+| Reset tokens     | Single-use · 10 min TTL · invalidates all sessions on use |
+
+### Password Rules
+
+Enforced on the frontend (strength meter score ≥ 3 required) and must be mirrored server-side:
+
+| Rule                                             | Status      |
+| ------------------------------------------------ | ----------- |
+| 8+ characters                                    | ✅ Required |
+| Uppercase letter                                 | ✅ Required |
+| Lowercase letter                                 | ✅ Required |
+| Number                                           | ✅ Required |
+| Symbol                                           | ✅ Required |
+| 12+ characters                                   | ⭐ Bonus    |
+| No common words (`password`, `qwerty`, `admin`…) | ✅ Required |
+| No 3+ character repeats (`aaaa`, `1111`…)        | ✅ Required |
+
+---
+
 ## 🎨 Design System
 
 CineScript uses a cinematic **gold-on-black** aesthetic. All tokens live in `frontend/src/styles.css` as `oklch` values.
@@ -584,36 +621,28 @@ All interactive elements respond with a gold glow on hover/focus. Page transitio
 
 ---
 
-## 🔐 Security
+## 🚀 Deployment
 
-| Mechanism        | Implementation                                            |
-| ---------------- | --------------------------------------------------------- |
-| Password hashing | bcrypt · 12 salt rounds                                   |
-| OTP hashing      | bcrypt · 10 salt rounds                                   |
-| OTP lifetime     | 5 minutes · auto-deleted after use                        |
-| OTP limits       | Max 5 verification attempts · max 3 resends               |
-| JWT delivery     | HTTP-only cookies + `Authorization: Bearer` header        |
-| Cookie flags     | `httpOnly` · `secure` · `sameSite=strict`                 |
-| Security headers | Helmet.js                                                 |
-| Input validation | Joi schemas on every endpoint                             |
-| CORS             | Restricted to `CLIENT_URL` only                           |
-| Rate limiting    | Per-IP and per-email on sensitive routes                  |
-| Reset tokens     | Single-use · 10 min TTL · invalidates all sessions on use |
+### Backend (e.g. Railway / Render / Fly.io)
 
-### Password Rules
+```bash
+cd backend
+npm install
+npm start
+```
 
-Enforced on the frontend (strength meter score ≥ 3 required) and mirrored server-side:
+Set all production environment variables in your host's dashboard. Ensure `NODE_ENV=production` and `CLIENT_URL` points to your deployed frontend domain.
 
-| Rule                                             | Status      |
-| ------------------------------------------------ | ----------- |
-| 8+ characters                                    | ✅ Required |
-| Uppercase letter                                 | ✅ Required |
-| Lowercase letter                                 | ✅ Required |
-| Number                                           | ✅ Required |
-| Symbol                                           | ✅ Required |
-| 12+ characters                                   | ⭐ Bonus    |
-| No common words (`password`, `qwerty`, `admin`…) | ✅ Required |
-| No 3+ character repeats (`aaaa`, `1111`…)        | ✅ Required |
+### Frontend (e.g. Vercel / Netlify)
+
+```bash
+cd frontend
+bun run build       # outputs to dist/
+```
+
+Set `VITE_API_BASE_URL` to your deployed backend URL in the host's environment settings.
+
+> **CORS**: The backend's CORS policy is locked to `CLIENT_URL`. Update this env var to match your production frontend domain or requests will be blocked.
 
 ---
 
@@ -628,7 +657,6 @@ Enforced on the frontend (strength meter score ≥ 3 required) and mirrored serv
 4. Under **Network Access**, add `0.0.0.0/0` (or your server IP for tighter security)
 5. Click **Connect → Drivers → Node.js**, copy the connection string
 6. Replace `<password>` and set as `MONGODB_URI` in `backend/.env`
-
 </details>
 
 <details>
@@ -638,7 +666,6 @@ Enforced on the frontend (strength meter score ≥ 3 required) and mirrored serv
 2. Navigate to **API Keys → Create New Key**
 3. Set as `GROQ_API_KEY` in `backend/.env`
 4. Optionally override the model with `GROQ_MODEL` (default: `llama-3.3-70b-versatile`)
-
 </details>
 
 <details>
@@ -649,112 +676,7 @@ Enforced on the frontend (strength meter score ≥ 3 required) and mirrored serv
 3. The key starts with `xkeysib-` — set as `BREVO_API_KEY` in `backend/.env`
 4. Verify your sender address under **Senders & IP** in the Brevo dashboard
 5. Set it as `FROM_EMAIL` in `backend/.env`
-
 </details>
-
----
-
-## 🚀 Deployment
-
-The app is split across two free-tier cloud services — frontend on **Cloudflare Workers** (SSR) and backend on **Render** (Node.js).
-
-[🌐 Frontend — Cloudflare Workers](#-frontend--cloudflare-workers) · [🖥 Backend — Render](#-backend--render) · [🔁 Redeployment](#-redeployment-workflow)
-
----
-
-### 🌐 Frontend — Cloudflare Workers
-
-**Live URL:** `https://cine-script-ai.saladisubrahmanyam6.workers.dev`
-
-TanStack Start outputs a Cloudflare-compatible SSR bundle via `@cloudflare/vite-plugin`. The `wrangler.jsonc` at the root of `frontend/` is the deployment manifest.
-
-#### Wrangler Config (`frontend/wrangler.jsonc`)
-
-```jsonc
-{
-  "name": "cine-script-ai",
-  "compatibility_date": "2025-09-24",
-  "compatibility_flags": ["nodejs_compat"],
-  "main": "src/server.ts",
-}
-```
-
-#### Cloudflare Dashboard — Build Settings
-
-| Field              | Value                                         |
-| ------------------ | --------------------------------------------- |
-| **Repository**     | `subbu666/Cine-Script-AI`                     |
-| **Build Command**  | `cd frontend && npm install && npm run build` |
-| **Deploy Command** | `cd frontend && npx wrangler deploy`          |
-| **Path**           | `frontend`                                    |
-| **Node Version**   | `20`                                          |
-
-#### Environment Variables (Cloudflare Dashboard → Settings → Environment Variables)
-
-| Variable            | Value                                             |
-| ------------------- | ------------------------------------------------- |
-| `VITE_API_BASE_URL` | `https://cine-script-ai-backend.onrender.com/api` |
-| `NODE_VERSION`      | `20`                                              |
-
-> ⚠️ `VITE_*` variables are baked in at **build time** — changing them requires a redeployment.
-> Cloudflare Dashboard → Workers & Pages → Cine-Script-AI → Deployments → **Retry deployment**.
-
----
-
-### 🖥 Backend — Render
-
-**Live URL:** `https://cine-script-ai-backend.onrender.com`
-
-#### Render Dashboard — Service Settings
-
-| Field              | Value                     |
-| ------------------ | ------------------------- |
-| **Repository**     | `subbu666/Cine-Script-AI` |
-| **Root Directory** | `backend`                 |
-| **Runtime**        | `Node`                    |
-| **Build Command**  | `npm install`             |
-| **Start Command**  | `node server.js`          |
-| **Instance Type**  | `Free`                    |
-
-#### Environment Variables (Render Dashboard → Environment)
-
-| Variable        | Required | Value                                                    |
-| --------------- | -------- | -------------------------------------------------------- |
-| `NODE_ENV`      | ✅       | `production`                                             |
-| `PORT`          | ✅       | `5000`                                                   |
-| `CLIENT_URL`    | ✅       | `https://cine-script-ai.saladisubrahmanyam6.workers.dev` |
-| `MONGODB_URI`   | ✅       | `mongodb+srv://...`                                      |
-| `JWT_SECRET`    | ✅       | your secret key                                          |
-| `JWT_EXPIRE`    | —        | `7d`                                                     |
-| `BREVO_API_KEY` | ✅       | `xkeysib-...`                                            |
-| `FROM_EMAIL`    | ✅       | your verified sender address                             |
-| `GROQ_API_KEY`  | ✅       | `gsk_...`                                                |
-| `GROQ_MODEL`    | —        | `llama-3.3-70b-versatile`                                |
-
-> ⚠️ **Render Free Tier Cold Starts** — Free instances spin down after 15 minutes of inactivity
-> and take ~30 seconds to wake on the first request. Use [UptimeRobot](https://uptimerobot.com)
-> (free tier) to ping `https://cine-script-ai-backend.onrender.com/api/health` every 10 minutes
-> to keep it warm.
-
----
-
-### 🔁 Redeployment Workflow
-
-Both services watch the `main` branch and redeploy automatically on every push:
-
-```
-git push origin main
-        │
-        ├─► Cloudflare rebuilds frontend
-        │     cd frontend && npm install && npm run build
-        │     cd frontend && npx wrangler deploy
-        │     → https://cine-script-ai.saladisubrahmanyam6.workers.dev
-        │
-        └─► Render rebuilds backend
-              npm install
-              node server.js
-              → https://cine-script-ai-backend.onrender.com
-```
 
 ---
 
@@ -764,29 +686,21 @@ git push origin main
 
 | Variable        | Required | Description                     | Example                   |
 | --------------- | -------- | ------------------------------- | ------------------------- |
-| `NODE_ENV`      | —        | Runtime mode                    | `development`             |
-| `PORT`          | —        | Server port                     | `5000`                    |
-| `CLIENT_URL`    | —        | Frontend origin (CORS)          | `http://localhost:5173`   |
-| `MONGODB_URI`   | ✅       | MongoDB Atlas connection string | `mongodb+srv://...`       |
-| `JWT_SECRET`    | ✅       | JWT signing secret              | `super-secret-key`        |
-| `JWT_EXPIRE`    | —        | Token expiry                    | `7d`                      |
-| `BREVO_API_KEY` | ✅       | Brevo email API key             | `xkeysib-...`             |
-| `FROM_EMAIL`    | —        | Sender address                  | `noreply@cinescript.app`  |
-| `GROQ_API_KEY`  | ✅       | Groq API key                    | `gsk_...`                 |
-| `GROQ_MODEL`    | —        | LLM model override              | `llama-3.3-70b-versatile` |
+| `NODE_ENV`      | No       | Runtime mode                    | `development`             |
+| `PORT`          | No       | Server port                     | `5000`                    |
+| `CLIENT_URL`    | No       | Frontend origin (CORS)          | `http://localhost:8080`   |
+| `MONGODB_URI`   | **Yes**  | MongoDB Atlas connection string | `mongodb+srv://...`       |
+| `JWT_SECRET`    | **Yes**  | JWT signing secret              | `super-secret-key`        |
+| `JWT_EXPIRE`    | No       | Token expiry                    | `7d`                      |
+| `BREVO_API_KEY` | **Yes**  | Brevo email API key             | `xkeysib-...`             |
+| `FROM_EMAIL`    | No       | Sender address                  | `noreply@cinescript.app`  |
+| `GROQ_API_KEY`  | **Yes**  | Groq API key                    | `gsk_...`                 |
+| `GROQ_MODEL`    | No       | LLM model override              | `llama-3.3-70b-versatile` |
 
 ### `frontend/.env`
 
 | Variable            | Required | Description          | Example                     |
 | ------------------- | -------- | -------------------- | --------------------------- |
-| `VITE_API_BASE_URL` | ✅       | Backend API base URL | `http://localhost:5000/api` |
+| `VITE_API_BASE_URL` | **Yes**  | Backend API base URL | `http://localhost:5000/api` |
 
 ---
-
-<div align="center">
-
-Made with ❤️ and dramatic BGM
-
-_Lights. Camera. Generate._
-
-</div>
