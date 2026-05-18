@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
+const crypto = require("crypto");
 
 /**
  * Dialogue Schema (embedded inside each scene)
- * FIX: was a raw `dialogue` string — now a proper { character, line } subdocument
  */
 const dialogueSchema = new mongoose.Schema(
   {
@@ -17,12 +17,11 @@ const dialogueSchema = new mongoose.Schema(
       trim: true,
     },
   },
-  { _id: false }, // no separate _id needed for dialogue entries
+  { _id: false },
 );
 
 /**
  * Scene Schema (embedded document)
- * FIX: renamed sceneIndex → number, added title, replaced dialogue string → dialogues array
  */
 const sceneSchema = new mongoose.Schema(
   {
@@ -44,7 +43,7 @@ const sceneSchema = new mongoose.Schema(
     },
     dialogues: {
       type: [dialogueSchema],
-      default: [], // allow empty array so scenes without dialogue don't fail validation
+      default: [],
     },
   },
   { _id: true },
@@ -68,7 +67,6 @@ const scriptSchema = new mongoose.Schema(
       trim: true,
       maxlength: [500, "Situation cannot exceed 500 characters"],
     },
-    // FIX: enum values now match frontend Mood type and validators.js exactly
     mood: {
       type: String,
       required: [true, "Mood is required"],
@@ -108,6 +106,36 @@ const scriptSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // ── Share feature ────────────────────────────────────────
+    /**
+     * isPublic: when true the script is accessible via its shareToken
+     *           without authentication.
+     */
+    isPublic: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    /**
+     * shareToken: a cryptographically random hex string (16 bytes → 32 chars).
+     * Generated on first share; persists so the same URL is stable.
+     * Sparse index so documents without a token don't bloat the index.
+     */
+    shareToken: {
+      type: String,
+      unique: true,
+      sparse: true, // only index documents that have a token
+      index: true,
+    },
+    /**
+     * sharedAt: timestamp of the most recent share action.
+     * Useful for analytics / expiry logic later.
+     */
+    sharedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -139,6 +167,21 @@ scriptSchema.virtual("formattedDate").get(function () {
     day: "numeric",
   });
 });
+
+/**
+ * Instance method: generate and persist a share token.
+ * Idempotent — if a token already exists it is reused.
+ * Returns the token string.
+ */
+scriptSchema.methods.ensureShareToken = async function () {
+  if (!this.shareToken) {
+    this.shareToken = crypto.randomBytes(16).toString("hex");
+  }
+  this.isPublic = true;
+  this.sharedAt = new Date();
+  await this.save();
+  return this.shareToken;
+};
 
 /**
  * Static method to get user's script history

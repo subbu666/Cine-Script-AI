@@ -11,7 +11,7 @@ const {
 
 /**
  * Script Controller
- * Handles AI script generation, history, and section-level regeneration
+ * Handles AI script generation, history, section-level regeneration, and sharing
  */
 
 /**
@@ -79,19 +79,14 @@ const generateScript = asyncHandler(async (req, res) => {
 
 /**
  * @desc   Regenerate a specific section of an existing script
- *         Supported sections: 'title' | 'tagline' | 'scene'
  * @route  PATCH /api/scripts/:id/regenerate
  * @access Private
- *
- * Body:
- *   { section: 'title' | 'tagline' | 'scene', sceneNumber?: number }
  */
 const regenerateSection = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { section, sceneNumber } = req.body;
   const userId = req.user.id;
 
-  // ── Input validation ────────────────────────────────────────
   const VALID_SECTIONS = ["title", "tagline", "scene"];
   if (!section || !VALID_SECTIONS.includes(section)) {
     throw new BadRequestError(
@@ -108,7 +103,6 @@ const regenerateSection = asyncHandler(async (req, res) => {
     }
   }
 
-  // ── Fetch script (ownership enforced) ───────────────────────
   const script = await Script.findOne({ _id: id, userId });
   if (!script) throw new NotFoundError("Script not found.");
 
@@ -119,7 +113,6 @@ const regenerateSection = asyncHandler(async (req, res) => {
     sceneNumber: sceneNumber ?? null,
   });
 
-  // ── Call AI service ─────────────────────────────────────────
   let regenerated;
   try {
     if (section === "title") {
@@ -136,14 +129,12 @@ const regenerateSection = asyncHandler(async (req, res) => {
         { currentTitle: script.title },
       );
     } else {
-      // section === 'scene'
       const sceneNum = parseInt(sceneNumber, 10);
       const sceneExists = script.scenes.some((s) => s.number === sceneNum);
       if (!sceneExists) {
         throw new NotFoundError(`Scene ${sceneNum} not found in this script.`);
       }
 
-      // Convert Mongoose subdocuments to plain objects for the prompt builder
       const plainScenes = script.scenes.map((s) =>
         s.toObject ? s.toObject() : s,
       );
@@ -160,7 +151,6 @@ const regenerateSection = asyncHandler(async (req, res) => {
       );
     }
   } catch (error) {
-    // Re-throw domain errors (NotFoundError, BadRequestError) as-is
     if (error.statusCode) throw error;
 
     logger.error("Section regeneration AI call failed", {
@@ -174,21 +164,15 @@ const regenerateSection = asyncHandler(async (req, res) => {
     );
   }
 
-  // ── Patch the script document ────────────────────────────────
   if (section === "title") {
     script.title = regenerated.title;
   } else if (section === "tagline") {
     script.tagline = regenerated.tagline;
   } else {
-    // section === 'scene' — replace the matching scene in the array
     const sceneNum = parseInt(sceneNumber, 10);
     const sceneIdx = script.scenes.findIndex((s) => s.number === sceneNum);
-
-    // Preserve the Mongoose subdocument _id so the DB record stays stable
     const existingId = script.scenes[sceneIdx]._id;
     script.scenes[sceneIdx] = { ...regenerated.scene, _id: existingId };
-
-    // Explicitly mark the array as modified so Mongoose persists the change
     script.markModified("scenes");
   }
 
@@ -207,8 +191,6 @@ const regenerateSection = asyncHandler(async (req, res) => {
       data: {
         id: script._id,
         section,
-        // Always return title + tagline so the frontend can update both fields
-        // without an extra round-trip, and the full scenes array for the scene case.
         title: script.title,
         tagline: script.tagline,
         scenes: script.scenes,
@@ -267,6 +249,8 @@ const getScriptById = asyncHandler(async (req, res) => {
         scenes: script.scenes,
         sceneCount: script.scenes.length,
         isFavorite: script.isFavorite,
+        isPublic: script.isPublic,
+        shareToken: script.isPublic ? script.shareToken : undefined,
         createdAt: script.createdAt,
         generationTimeMs: script.generationTime,
       },
@@ -345,6 +329,127 @@ const getStats = asyncHandler(async (req, res) => {
   );
 });
 
+/**
+ * @desc   Share a script — generate a public share link token
+ * @route  POST /api/scripts/:id/share
+ * @access Private
+ *
+ * If the script already has a shareToken it is reused (stable URL).
+ * The script is marked isPublic = true and sharedAt is updated.
+ *
+ * Response:
+ *   { shareToken, shareUrl, isPublic, sharedAt }
+ */
+const shareScript = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  // Only the owner can share their own script
+  const script = await Script.findOne({ _id: id, userId });
+  if (!script) throw new NotFoundError("Script not found.");
+
+  // ensureShareToken is idempotent — reuses existing token if present
+  const token = await script.ensureShareToken();
+
+  // Build the public share URL. The FRONTEND_URL env var should point to
+  // the deployed frontend origin (e.g. https://cinescript.app).
+  // Falls back to a relative path for local dev.
+  const origin = process.env.FRONTEND_URL || "";
+  const shareUrl = `${origin}/share/${token}`;
+
+  logger.info("Script shared", {
+    userId,
+    scriptId: id,
+    shareToken: token,
+  });
+
+  res.status(200).json(
+    ApiResponse.success({
+      message: "Share link generated successfully",
+      data: {
+        shareToken: token,
+        shareUrl,
+        isPublic: script.isPublic,
+        sharedAt: script.sharedAt,
+      },
+    }),
+  );
+});
+
+/**
+ * @desc   Unshare a script — revoke public access (keeps token for potential re-share)
+ * @route  DELETE /api/scripts/:id/share
+ * @access Private
+ */
+const unshareScript = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  const script = await Script.findOne({ _id: id, userId });
+  if (!script) throw new NotFoundError("Script not found.");
+
+  script.isPublic = false;
+  await script.save();
+
+  logger.info("Script unshared", { userId, scriptId: id });
+
+  res.status(200).json(
+    ApiResponse.success({
+      message: "Script is now private",
+      data: { id: script._id, isPublic: false },
+    }),
+  );
+});
+
+/**
+ * @desc   Get a publicly shared script by its share token
+ * @route  GET /api/scripts/shared/:token
+ * @access Public (no auth required)
+ *
+ * Only returns the script if isPublic === true.
+ * Does NOT expose the owner's userId or internal metadata.
+ */
+const getSharedScript = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+
+  if (!token || token.length !== 32) {
+    throw new BadRequestError("Invalid share token.");
+  }
+
+  const script = await Script.findOne({
+    shareToken: token,
+    isPublic: true,
+  }).lean();
+
+  if (!script) {
+    throw new NotFoundError(
+      "This script is not available. It may have been made private or the link is invalid.",
+    );
+  }
+
+  logger.info("Shared script accessed", {
+    scriptId: script._id,
+    shareToken: token,
+  });
+
+  // Return only public-safe fields — no userId, no internal tokens
+  res.status(200).json(
+    ApiResponse.success({
+      message: "Shared script retrieved successfully",
+      data: {
+        id: script._id,
+        title: script.title,
+        tagline: script.tagline,
+        mood: script.mood,
+        scenes: script.scenes,
+        sceneCount: script.scenes.length,
+        sharedAt: script.sharedAt,
+        createdAt: script.createdAt,
+      },
+    }),
+  );
+});
+
 module.exports = {
   generateScript,
   regenerateSection,
@@ -353,4 +458,7 @@ module.exports = {
   toggleFavorite,
   deleteScript,
   getStats,
+  shareScript,
+  unshareScript,
+  getSharedScript,
 };

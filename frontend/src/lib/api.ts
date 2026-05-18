@@ -41,8 +41,6 @@ export interface AuthResponse {
 
 /**
  * The shape returned by PATCH /scripts/:id/regenerate.
- * The backend always echoes back title + tagline + full scenes array
- * so the frontend can apply the diff without a separate GET call.
  */
 export interface RegenerateSectionResponse {
   id: string;
@@ -50,6 +48,16 @@ export interface RegenerateSectionResponse {
   title: string;
   tagline: string;
   scenes: Scene[];
+}
+
+/**
+ * The shape returned by POST /scripts/:id/share.
+ */
+export interface ShareScriptResponse {
+  shareToken: string;
+  shareUrl: string;
+  isPublic: boolean;
+  sharedAt: string;
 }
 
 class ApiError extends Error {
@@ -61,7 +69,6 @@ class ApiError extends Error {
 }
 
 // Backend always responds with { success, message, data, meta? }
-// This function unwraps the envelope so callers receive `data` directly.
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!API_BASE_URL) throw new ApiError("API base URL not configured", 0);
   const token = tokenStore.get();
@@ -196,18 +203,7 @@ export const scriptApi = {
       moodBreakdown: { mood: string; count: number }[];
     }>("/scripts/stats"),
 
-  /**
-   * PATCH /scripts/:id/regenerate
-   *
-   * Regenerates a specific section of an existing script via AI.
-   *
-   * @param id          - Script MongoDB _id
-   * @param section     - Which part to regenerate: 'title' | 'tagline' | 'scene'
-   * @param sceneNumber - Required when section === 'scene'; the 1-based scene number
-   *
-   * The backend always returns the full { title, tagline, scenes } so the caller
-   * can update whichever fields changed without needing a separate GET.
-   */
+  // PATCH /scripts/:id/regenerate
   regenerateSection: (
     id: string,
     section: "title" | "tagline" | "scene",
@@ -220,4 +216,36 @@ export const scriptApi = {
         ...(sceneNumber !== undefined ? { sceneNumber } : {}),
       }),
     }),
+
+  /**
+   * POST /scripts/:id/share
+   * Generates (or retrieves existing) public share link for a script.
+   * Idempotent — same token is returned on repeat calls.
+   */
+  share: (id: string): Promise<ShareScriptResponse> =>
+    request<ShareScriptResponse>(`/scripts/${id}/share`, { method: "POST" }),
+
+  /**
+   * DELETE /scripts/:id/share
+   * Revokes public access to the script (makes it private again).
+   */
+  unshare: (id: string): Promise<{ id: string; isPublic: boolean }> =>
+    request(`/scripts/${id}/share`, { method: "DELETE" }),
+
+  /**
+   * GET /scripts/shared/:token
+   * Public endpoint — fetches a shared script without authentication.
+   */
+  getShared: async (token: string): Promise<Script> => {
+    if (!API_BASE_URL) throw new ApiError("API base URL not configured", 0);
+    const res = await fetch(`${API_BASE_URL}/scripts/shared/${token}`, {
+      headers: { "Content-Type": "application/json" },
+    });
+    const text = await res.text();
+    const body = text ? JSON.parse(text) : null;
+    if (!res.ok) {
+      throw new ApiError(body?.message || res.statusText || "Request failed", res.status);
+    }
+    return (body?.data !== undefined ? body.data : body) as Script;
+  },
 };

@@ -108,6 +108,7 @@ cinescript_frontend/
     │   ├── SceneCard.tsx             # Scene description + dialogue card
     │   ├── HistoryPanel.tsx          # Slide-in history sidebar
     │   ├── Loader.tsx                # Spinner + skeleton screens
+    │   ├── ConfirmDialog.tsx         # Deleting the scripts
     │   ├── Toast.tsx                 # Error toast notifications
     │   ├── AuthCard.tsx              # Shared login / signup form shell
     │   └── PasswordStrength.tsx      # 6-tier strength meter + rule checklist
