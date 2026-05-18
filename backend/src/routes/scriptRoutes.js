@@ -4,6 +4,7 @@ const router = express.Router();
 // Controllers
 const {
   generateScript,
+  regenerateSection,
   getHistory,
   getScriptById,
   toggleFavorite,
@@ -21,6 +22,7 @@ const {
   generateScriptSchema,
   scriptHistorySchema,
   toggleFavoriteSchema,
+  regenerateSectionSchema,
 } = require("../utils/validators");
 
 /**
@@ -59,6 +61,18 @@ router.get("/:id", auth, getScriptById);
 // @desc    Toggle favorite status
 // @access  Private
 router.patch("/:id/favorite", auth, toggleFavorite);
+
+// @route   PATCH /api/scripts/:id/regenerate
+// @desc    Regenerate a specific section of an existing script (title, tagline, or a scene)
+// @access  Private
+// Body: { section: 'title' | 'tagline' | 'scene', sceneNumber?: number }
+router.patch(
+  "/:id/regenerate",
+  auth,
+  aiLimiter,
+  validators.body(regenerateSectionSchema),
+  regenerateSection,
+);
 
 // @route   DELETE /api/scripts/:id
 // @desc    Delete a script

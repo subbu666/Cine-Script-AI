@@ -4,7 +4,7 @@ const logger = require("../utils/logger");
 
 /**
  * Groq AI Service
- * Handles script generation using Groq's LLM API
+ * Handles script generation and section-level regeneration using Groq's LLM API
  */
 class GroqService {
   /**
@@ -35,10 +35,7 @@ class GroqService {
   }
 
   /**
-   * Build the generation prompt.
-   * FIX: Updated JSON schema to match the frontend Scene type exactly:
-   *   number (int), title (string), description (string),
-   *   dialogues (array of { character, line })
+   * Build the full generation prompt.
    */
   static buildGenerationPrompt(situation, mood) {
     const systemPrompt = this.getSystemPrompt(mood);
@@ -84,16 +81,117 @@ RESPONSE FORMAT - Return ONLY valid JSON, no extra text, no markdown:
     return { systemPrompt, userPrompt };
   }
 
+  /* ============================================================
+   *  REGENERATION PROMPT BUILDERS
+   * ============================================================ */
+
   /**
-   * Parse and validate the AI response.
-   * FIX: validator and mapper now use number/title/description/dialogues
-   *      instead of the old sceneIndex/dialogue fields.
+   * Build a prompt for regenerating ONLY the movie title.
+   */
+  static buildRegenerateTitlePrompt(situation, mood) {
+    const systemPrompt = this.getSystemPrompt(mood);
+
+    const userPrompt = `You are regenerating ONLY the title for a ${mood.toUpperCase()} movie script.
+
+SITUATION: "${situation}"
+
+Create a BRAND NEW, FRESH ${mood.toUpperCase()} movie title — Bollywood/Hollywood style. It must be catchy, dramatic, and memorable. This should feel completely different from a typical AI-generated title.
+
+RULES:
+- Return a single title string only
+- Do NOT include a tagline
+- Avoid generic words like "The Journey", "The Path", "Rising" unless used creatively
+- Make it punchy, evocative, and specific to the ${mood} tone
+
+Return ONLY valid JSON, no extra text, no markdown:
+{ "title": "Your Dramatic New Title" }`;
+
+    return { systemPrompt, userPrompt };
+  }
+
+  /**
+   * Build a prompt for regenerating ONLY the tagline.
+   */
+  static buildRegenerateTaglinePrompt(situation, mood, currentTitle) {
+    const systemPrompt = this.getSystemPrompt(mood);
+
+    const userPrompt = `You are regenerating ONLY the tagline for a ${mood.toUpperCase()} movie titled "${currentTitle}".
+
+SITUATION: "${situation}"
+
+Write a POWERFUL new one-line tagline that sells this ${mood} film. It should complement the title and capture the emotional core of the story.
+
+RULES:
+- One tagline only — one sentence or phrase
+- Should feel cinematic and quotable
+- Must match the ${mood} tone
+- Avoid clichés like "One man's journey..." or "In a world where..."
+
+Return ONLY valid JSON, no extra text, no markdown:
+{ "tagline": "Your powerful new tagline here" }`;
+
+    return { systemPrompt, userPrompt };
+  }
+
+  /**
+   * Build a prompt for regenerating a SINGLE SCENE.
+   * Passes surrounding scenes as context so the new scene fits the arc.
+   */
+  static buildRegenerateScenePrompt(
+    situation,
+    mood,
+    sceneNumber,
+    totalScenes,
+    existingScenes,
+  ) {
+    const systemPrompt = this.getSystemPrompt(mood);
+
+    const contextLines = existingScenes
+      .filter((s) => s.number !== sceneNumber)
+      .map(
+        (s) =>
+          `  • Scene ${s.number} — "${s.title}": ${s.description.substring(0, 120).trim()}...`,
+      )
+      .join("\n");
+
+    const userPrompt = `You are regenerating Scene ${sceneNumber} of ${totalScenes} for a ${mood.toUpperCase()} movie script.
+
+SITUATION: "${situation}"
+
+Here are the OTHER scenes for narrative context (do NOT reproduce these, just use them to ensure your new scene fits the story arc):
+${contextLines}
+
+Write a COMPLETELY FRESH Scene ${sceneNumber} that:
+- Fits naturally at position ${sceneNumber} in a ${totalScenes}-scene ${mood} story
+- Does NOT duplicate the content of any other scene above
+- Has cinematic camera direction, lighting, and atmosphere in its description
+- Contains at least 2 dramatic dialogue entries with named characters
+
+Return ONLY valid JSON, no extra text, no markdown:
+{
+  "number": ${sceneNumber},
+  "title": "Scene Title Here",
+  "description": "Cinematic scene description with camera angles and atmosphere...",
+  "dialogues": [
+    { "character": "CHARACTER NAME", "line": "Dramatic dialogue..." },
+    { "character": "OTHER CHARACTER", "line": "Their response..." }
+  ]
+}`;
+
+    return { systemPrompt, userPrompt };
+  }
+
+  /* ============================================================
+   *  RESPONSE PARSERS
+   * ============================================================ */
+
+  /**
+   * Parse and validate the full script AI response.
    */
   static parseScriptResponse(responseText) {
     try {
       let jsonStr = responseText.trim();
 
-      // Strip markdown code fences if the model wraps the JSON
       if (jsonStr.startsWith("```json")) {
         jsonStr = jsonStr.replace(/^```json\s*/i, "").replace(/\s*```$/, "");
       } else if (jsonStr.startsWith("```")) {
@@ -102,7 +200,6 @@ RESPONSE FORMAT - Return ONLY valid JSON, no extra text, no markdown:
 
       const parsed = JSON.parse(jsonStr);
 
-      // --- top-level validation ---
       if (!parsed.title || typeof parsed.title !== "string") {
         throw new Error("Invalid response: missing title");
       }
@@ -113,13 +210,9 @@ RESPONSE FORMAT - Return ONLY valid JSON, no extra text, no markdown:
         throw new Error("Invalid response: scenes must be a non-empty array");
       }
 
-      // --- scene-level validation & normalisation ---
       const scenes = parsed.scenes.map((scene, index) => {
-        // FIX: accept `number` from new prompt; fall back to index+1 if missing
         const number =
           typeof scene.number === "number" ? scene.number : index + 1;
-
-        // FIX: accept `title`; fall back gracefully
         const title =
           typeof scene.title === "string" && scene.title.trim()
             ? scene.title.trim()
@@ -129,8 +222,6 @@ RESPONSE FORMAT - Return ONLY valid JSON, no extra text, no markdown:
           throw new Error(`Invalid scene ${index + 1}: missing description`);
         }
 
-        // FIX: accept `dialogues` array; fall back to empty array so the UI
-        //      can show the graceful "No dialogue" message instead of crashing.
         let dialogues = [];
         if (Array.isArray(scene.dialogues)) {
           dialogues = scene.dialogues
@@ -169,10 +260,25 @@ RESPONSE FORMAT - Return ONLY valid JSON, no extra text, no markdown:
   }
 
   /**
-   * Generate a movie script from a situation
-   * @param {string} situation - The everyday situation
-   * @param {string} mood - The desired mood/style
-   * @returns {Promise<Object>} Generated script
+   * Safely strip markdown fences and parse JSON from an AI response.
+   * Used for targeted single-field regeneration responses.
+   */
+  static parseJsonResponse(responseText) {
+    let jsonStr = responseText.trim();
+    if (jsonStr.startsWith("```json")) {
+      jsonStr = jsonStr.replace(/^```json\s*/i, "").replace(/\s*```$/, "");
+    } else if (jsonStr.startsWith("```")) {
+      jsonStr = jsonStr.replace(/^```\s*/, "").replace(/\s*```$/, "");
+    }
+    return JSON.parse(jsonStr);
+  }
+
+  /* ============================================================
+   *  CORE GENERATION
+   * ============================================================ */
+
+  /**
+   * Generate a full movie script from a situation.
    */
   static async generateScript(situation, mood = "dramatic") {
     const startTime = Date.now();
@@ -202,10 +308,7 @@ RESPONSE FORMAT - Return ONLY valid JSON, no extra text, no markdown:
       });
 
       const responseText = completion.choices[0]?.message?.content;
-
-      if (!responseText) {
-        throw new Error("Empty response from Groq API");
-      }
+      if (!responseText) throw new Error("Empty response from Groq API");
 
       const script = this.parseScriptResponse(responseText);
       const generationTime = Date.now() - startTime;
@@ -216,15 +319,205 @@ RESPONSE FORMAT - Return ONLY valid JSON, no extra text, no markdown:
         generationTimeMs: generationTime,
       });
 
-      return {
-        ...script,
-        generationTime,
-      };
+      return { ...script, generationTime };
     } catch (error) {
       logger.error("Script generation failed", {
         error: error.message,
         situation: situation.substring(0, 100),
         mood,
+      });
+
+      if (error.status === 429) {
+        throw new Error(
+          "AI service is currently busy. Please try again in a moment.",
+        );
+      }
+      if (error.status >= 500) {
+        throw new Error(
+          "AI service is temporarily unavailable. Please try again later.",
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  /* ============================================================
+   *  SECTION REGENERATION
+   * ============================================================ */
+
+  /**
+   * Regenerate a specific section of an existing script.
+   *
+   * @param {string} situation   - Original situation text
+   * @param {string} mood        - Script mood
+   * @param {'title'|'tagline'|'scene'} section - Which section to regenerate
+   * @param {Object} options
+   * @param {string} [options.currentTitle]    - Required for tagline regeneration
+   * @param {number} [options.sceneNumber]     - Required for scene regeneration
+   * @param {number} [options.totalScenes]     - Total scene count, for scene context
+   * @param {Array}  [options.existingScenes]  - All current scenes, for scene context
+   *
+   * @returns {Promise<{ title?: string, tagline?: string, scene?: Object }>}
+   */
+  static async regenerateSection(situation, mood, section, options = {}) {
+    const startTime = Date.now();
+
+    try {
+      logger.info("Starting section regeneration", { section, mood, options });
+
+      const client = getGroqClient();
+
+      // ── TITLE ──────────────────────────────────────────────
+      if (section === "title") {
+        const { systemPrompt, userPrompt } = this.buildRegenerateTitlePrompt(
+          situation,
+          mood,
+        );
+
+        const completion = await client.chat.completions.create({
+          model: env.groqModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.95, // higher temp for more creative title variation
+          max_tokens: 80,
+          stream: false,
+        });
+
+        const responseText = completion.choices[0]?.message?.content;
+        if (!responseText) throw new Error("Empty response from Groq API");
+
+        const parsed = this.parseJsonResponse(responseText);
+        if (!parsed.title || typeof parsed.title !== "string") {
+          throw new Error("Invalid regeneration response: missing title field");
+        }
+
+        logger.info("Title regenerated", {
+          title: parsed.title,
+          durationMs: Date.now() - startTime,
+        });
+
+        return { title: parsed.title.trim() };
+      }
+
+      // ── TAGLINE ────────────────────────────────────────────
+      if (section === "tagline") {
+        const { currentTitle } = options;
+        if (!currentTitle)
+          throw new Error("currentTitle is required for tagline regeneration");
+
+        const { systemPrompt, userPrompt } = this.buildRegenerateTaglinePrompt(
+          situation,
+          mood,
+          currentTitle,
+        );
+
+        const completion = await client.chat.completions.create({
+          model: env.groqModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.95,
+          max_tokens: 120,
+          stream: false,
+        });
+
+        const responseText = completion.choices[0]?.message?.content;
+        if (!responseText) throw new Error("Empty response from Groq API");
+
+        const parsed = this.parseJsonResponse(responseText);
+        if (!parsed.tagline || typeof parsed.tagline !== "string") {
+          throw new Error(
+            "Invalid regeneration response: missing tagline field",
+          );
+        }
+
+        logger.info("Tagline regenerated", {
+          tagline: parsed.tagline,
+          durationMs: Date.now() - startTime,
+        });
+
+        return { tagline: parsed.tagline.trim() };
+      }
+
+      // ── SCENE ──────────────────────────────────────────────
+      if (section === "scene") {
+        const { sceneNumber, totalScenes, existingScenes } = options;
+        if (sceneNumber == null)
+          throw new Error("sceneNumber is required for scene regeneration");
+
+        const { systemPrompt, userPrompt } = this.buildRegenerateScenePrompt(
+          situation,
+          mood,
+          sceneNumber,
+          totalScenes || existingScenes?.length || sceneNumber,
+          existingScenes || [],
+        );
+
+        const completion = await client.chat.completions.create({
+          model: env.groqModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.9,
+          max_tokens: 1200,
+          stream: false,
+        });
+
+        const responseText = completion.choices[0]?.message?.content;
+        if (!responseText) throw new Error("Empty response from Groq API");
+
+        const parsed = this.parseJsonResponse(responseText);
+
+        // Validate & normalise the returned scene
+        if (!parsed.description || typeof parsed.description !== "string") {
+          throw new Error("Invalid scene response: missing description");
+        }
+
+        const scene = {
+          number:
+            typeof parsed.number === "number" ? parsed.number : sceneNumber,
+          title:
+            typeof parsed.title === "string" && parsed.title.trim()
+              ? parsed.title.trim()
+              : `Scene ${sceneNumber}`,
+          description: parsed.description.trim(),
+          dialogues: Array.isArray(parsed.dialogues)
+            ? parsed.dialogues
+                .filter(
+                  (d) =>
+                    d &&
+                    typeof d.character === "string" &&
+                    typeof d.line === "string",
+                )
+                .map((d) => ({
+                  character: d.character.trim(),
+                  line: d.line.trim(),
+                }))
+            : [],
+        };
+
+        logger.info("Scene regenerated", {
+          sceneNumber,
+          title: scene.title,
+          dialogues: scene.dialogues.length,
+          durationMs: Date.now() - startTime,
+        });
+
+        return { scene };
+      }
+
+      throw new Error(
+        `Unknown section: "${section}". Must be 'title', 'tagline', or 'scene'.`,
+      );
+    } catch (error) {
+      logger.error("Section regeneration failed", {
+        section,
+        error: error.message,
       });
 
       if (error.status === 429) {

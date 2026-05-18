@@ -76,7 +76,7 @@ class EmailService {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verify Your Email - Script Alchemy</title>
+  <title>Verify Your Email - Cine Script AI</title>
   <style>
     ${EmailService._baseStyles}
     .header {
@@ -98,13 +98,13 @@ class EmailService {
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo"><span>&#127909;</span> Script Alchemy</div>
+      <div class="logo"><span>&#127909;</span> Cine Script AI</div>
       <div class="tagline">TRANSFORM MOMENTS INTO CINEMA</div>
     </div>
     <div class="content">
       <div class="greeting">Hello, ${name}!</div>
       <div class="message">
-        Welcome to Script Alchemy, where everyday moments become blockbuster scripts.
+        Welcome to Cine Script AI, where everyday moments become blockbuster scripts.
         Use the verification code below to complete your signup.
       </div>
       <div class="otp-container">
@@ -125,7 +125,7 @@ class EmailService {
     <div class="footer">
       <div class="footer-text">
         Crafted with <span style="color:#e94560;">&#9829;</span> by
-        <span class="footer-brand">Script Alchemy</span>
+        <span class="footer-brand">Cine Script AI</span>
       </div>
       <div class="support">Need help? Contact our support team</div>
     </div>
@@ -145,7 +145,7 @@ class EmailService {
         expiryMinutes,
       });
       const textContent = `
-Script Alchemy - Email Verification
+Cine Script AI - Email Verification
 
 Hello, ${name}!
 
@@ -156,13 +156,13 @@ This code will expire in ${expiryMinutes} minutes.
 If you didn't request this code, please ignore this email.
 
 ---
-Script Alchemy - Transform Moments Into Cinema
+Cine Script AI - Transform Moments Into Cinema
       `.trim();
 
       const result = await sendEmail({
         to,
         toName: name,
-        subject: `${otp} - Your Script Alchemy Verification Code`,
+        subject: `${otp} - Your Cine Script AI Verification Code`,
         htmlContent,
         textContent,
       });
@@ -196,7 +196,7 @@ Script Alchemy - Transform Moments Into Cinema
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reset Your Password - Script Alchemy</title>
+  <title>Reset Your Password - Cine Script AI</title>
   <style>
     ${EmailService._baseStyles}
     /* Gold/amber accent — distinct from the signup red */
@@ -240,7 +240,7 @@ Script Alchemy - Transform Moments Into Cinema
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <div class="logo"><span>&#127909;</span> Script Alchemy</div>
+      <div class="logo"><span>&#127909;</span> Cine Script AI</div>
       <div class="tagline">PASSWORD RESET REQUEST</div>
     </div>
 
@@ -251,7 +251,7 @@ Script Alchemy - Transform Moments Into Cinema
 
       <div class="greeting">Hey ${name},</div>
       <div class="message">
-        We received a request to reset the password on your Script Alchemy account.
+        We received a request to reset the password on your Cine Script AI account.
         Enter the code below to continue. The code is valid for ${expiryMinutes} minutes.
       </div>
 
@@ -282,7 +282,7 @@ Script Alchemy - Transform Moments Into Cinema
     <!-- Footer -->
     <div class="footer">
       <div class="footer-text">
-        Sent by <span class="footer-brand">Script Alchemy</span>
+        Sent by <span class="footer-brand">Cine Script AI</span>
         &nbsp;&middot;&nbsp; This is an automated email, please do not reply.
       </div>
       <div class="support">Need help? Contact our support team</div>
@@ -314,11 +314,11 @@ Script Alchemy - Transform Moments Into Cinema
         expiryMinutes,
       });
       const textContent = `
-Script Alchemy - Password Reset
+Cine Script AI - Password Reset
 
 Hey ${name},
 
-We received a request to reset your Script Alchemy password.
+We received a request to reset your Cine Script AI password.
 
 Your reset code is: ${otp}
 
@@ -328,13 +328,13 @@ If you did NOT request a password reset, please ignore this email.
 Your password has not been changed.
 
 ---
-Script Alchemy - Transform Moments Into Cinema
+Cine Script AI - Transform Moments Into Cinema
       `.trim();
 
       const result = await sendEmail({
         to,
         toName: name,
-        subject: `${otp} - Reset your Script Alchemy password`,
+        subject: `${otp} - Reset your Cine Script AI password`,
         htmlContent,
         textContent,
       });
@@ -380,7 +380,7 @@ Script Alchemy - Transform Moments Into Cinema
 </head>
 <body>
   <div class="container">
-    <h1>Welcome to Script Alchemy! &#127881;</h1>
+    <h1>Welcome to Cine Script AI! &#127881;</h1>
     <p>Hey ${name},</p>
     <p>
       Your account is now verified and ready to go! Start transforming everyday
@@ -397,7 +397,7 @@ Script Alchemy - Transform Moments Into Cinema
       const result = await sendEmail({
         to,
         toName: name,
-        subject: "Welcome to Script Alchemy!",
+        subject: "Welcome to Cine Script AI!",
         htmlContent,
       });
 

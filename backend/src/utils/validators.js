@@ -106,6 +106,23 @@ const scriptHistorySchema = Joi.object({
     }),
 });
 
+const regenerateSectionSchema = Joi.object({
+  section: Joi.string().valid("title", "tagline", "scene").required().messages({
+    "any.only": "section must be one of: title, tagline, scene",
+    "any.required": "section is required",
+  }),
+  sceneNumber: Joi.when("section", {
+    is: "scene",
+    then: Joi.number().integer().min(1).required().messages({
+      "any.required": "sceneNumber is required when regenerating a scene",
+      "number.min": "sceneNumber must be a positive integer",
+    }),
+    otherwise: Joi.forbidden().messages({
+      "any.unknown": "sceneNumber is only valid when section is 'scene'",
+    }),
+  }),
+});
+
 // Toggle favorite validation
 const toggleFavoriteSchema = Joi.object({
   scriptId: Joi.string()
@@ -176,4 +193,5 @@ module.exports = {
   forgotPasswordSchema,
   verifyForgotOtpSchema,
   resetPasswordSchema,
+  regenerateSectionSchema,
 };

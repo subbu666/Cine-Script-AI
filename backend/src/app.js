@@ -80,7 +80,7 @@ const createApp = () => {
   app.get("/api/health", (req, res) => {
     res.status(200).json({
       success: true,
-      message: "Script Alchemy API is running",
+      message: "Cine Script AI API is running",
       data: {
         status: "healthy",
         timestamp: new Date().toISOString(),
@@ -111,9 +111,9 @@ const createApp = () => {
   app.get("/api", (req, res) => {
     res.status(200).json({
       success: true,
-      message: "Welcome to Script Alchemy API",
+      message: "Welcome to Cine Script AI API",
       data: {
-        name: "Script Alchemy API",
+        name: "Cine Script AI API",
         version: "1.0.0",
         description: "AI-powered movie script generation",
         documentation: "/api/docs",

@@ -11,7 +11,7 @@ const {
 
 /**
  * Script Controller
- * Handles AI script generation and script history
+ * Handles AI script generation, history, and section-level regeneration
  */
 
 /**
@@ -31,21 +31,16 @@ const generateScript = asyncHandler(async (req, res) => {
     situation: situation.substring(0, 100),
   });
 
-  // Generate script via Groq AI
   let generatedScript;
   try {
     generatedScript = await GroqService.generateScript(situation, mood);
   } catch (error) {
-    logger.error("Script generation failed", {
-      userId,
-      error: error.message,
-    });
+    logger.error("Script generation failed", { userId, error: error.message });
     throw new InternalServerError(
       error.message || "Failed to generate script. Please try again.",
     );
   }
 
-  // Save to database
   const script = await Script.create({
     userId,
     situation,
@@ -77,6 +72,146 @@ const generateScript = asyncHandler(async (req, res) => {
         sceneCount: script.scenes.length,
         createdAt: script.createdAt,
         generationTimeMs: script.generationTime,
+      },
+    }),
+  );
+});
+
+/**
+ * @desc   Regenerate a specific section of an existing script
+ *         Supported sections: 'title' | 'tagline' | 'scene'
+ * @route  PATCH /api/scripts/:id/regenerate
+ * @access Private
+ *
+ * Body:
+ *   { section: 'title' | 'tagline' | 'scene', sceneNumber?: number }
+ */
+const regenerateSection = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { section, sceneNumber } = req.body;
+  const userId = req.user.id;
+
+  // ── Input validation ────────────────────────────────────────
+  const VALID_SECTIONS = ["title", "tagline", "scene"];
+  if (!section || !VALID_SECTIONS.includes(section)) {
+    throw new BadRequestError(
+      `Invalid section. Must be one of: ${VALID_SECTIONS.join(", ")}.`,
+    );
+  }
+
+  if (section === "scene") {
+    const num = parseInt(sceneNumber, 10);
+    if (!sceneNumber || isNaN(num) || num < 1) {
+      throw new BadRequestError(
+        "sceneNumber must be a positive integer when section is 'scene'.",
+      );
+    }
+  }
+
+  // ── Fetch script (ownership enforced) ───────────────────────
+  const script = await Script.findOne({ _id: id, userId });
+  if (!script) throw new NotFoundError("Script not found.");
+
+  logger.info("Section regeneration requested", {
+    userId,
+    scriptId: id,
+    section,
+    sceneNumber: sceneNumber ?? null,
+  });
+
+  // ── Call AI service ─────────────────────────────────────────
+  let regenerated;
+  try {
+    if (section === "title") {
+      regenerated = await GroqService.regenerateSection(
+        script.situation,
+        script.mood,
+        "title",
+      );
+    } else if (section === "tagline") {
+      regenerated = await GroqService.regenerateSection(
+        script.situation,
+        script.mood,
+        "tagline",
+        { currentTitle: script.title },
+      );
+    } else {
+      // section === 'scene'
+      const sceneNum = parseInt(sceneNumber, 10);
+      const sceneExists = script.scenes.some((s) => s.number === sceneNum);
+      if (!sceneExists) {
+        throw new NotFoundError(`Scene ${sceneNum} not found in this script.`);
+      }
+
+      // Convert Mongoose subdocuments to plain objects for the prompt builder
+      const plainScenes = script.scenes.map((s) =>
+        s.toObject ? s.toObject() : s,
+      );
+
+      regenerated = await GroqService.regenerateSection(
+        script.situation,
+        script.mood,
+        "scene",
+        {
+          sceneNumber: sceneNum,
+          totalScenes: script.scenes.length,
+          existingScenes: plainScenes,
+        },
+      );
+    }
+  } catch (error) {
+    // Re-throw domain errors (NotFoundError, BadRequestError) as-is
+    if (error.statusCode) throw error;
+
+    logger.error("Section regeneration AI call failed", {
+      userId,
+      scriptId: id,
+      section,
+      error: error.message,
+    });
+    throw new InternalServerError(
+      error.message || "Failed to regenerate section. Please try again.",
+    );
+  }
+
+  // ── Patch the script document ────────────────────────────────
+  if (section === "title") {
+    script.title = regenerated.title;
+  } else if (section === "tagline") {
+    script.tagline = regenerated.tagline;
+  } else {
+    // section === 'scene' — replace the matching scene in the array
+    const sceneNum = parseInt(sceneNumber, 10);
+    const sceneIdx = script.scenes.findIndex((s) => s.number === sceneNum);
+
+    // Preserve the Mongoose subdocument _id so the DB record stays stable
+    const existingId = script.scenes[sceneIdx]._id;
+    script.scenes[sceneIdx] = { ...regenerated.scene, _id: existingId };
+
+    // Explicitly mark the array as modified so Mongoose persists the change
+    script.markModified("scenes");
+  }
+
+  await script.save();
+
+  logger.info("Section regenerated and saved", {
+    userId,
+    scriptId: id,
+    section,
+    sceneNumber: sceneNumber ?? null,
+  });
+
+  res.status(200).json(
+    ApiResponse.success({
+      message: `${section.charAt(0).toUpperCase() + section.slice(1)} regenerated successfully`,
+      data: {
+        id: script._id,
+        section,
+        // Always return title + tagline so the frontend can update both fields
+        // without an extra round-trip, and the full scenes array for the scene case.
+        title: script.title,
+        tagline: script.tagline,
+        scenes: script.scenes,
       },
     }),
   );
@@ -117,14 +252,8 @@ const getScriptById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
 
-  const script = await Script.findOne({
-    _id: id,
-    userId,
-  });
-
-  if (!script) {
-    throw new NotFoundError("Script not found.");
-  }
+  const script = await Script.findOne({ _id: id, userId });
+  if (!script) throw new NotFoundError("Script not found.");
 
   res.status(200).json(
     ApiResponse.success({
@@ -154,14 +283,8 @@ const toggleFavorite = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
 
-  const script = await Script.findOne({
-    _id: id,
-    userId,
-  });
-
-  if (!script) {
-    throw new NotFoundError("Script not found.");
-  }
+  const script = await Script.findOne({ _id: id, userId });
+  if (!script) throw new NotFoundError("Script not found.");
 
   script.isFavorite = !script.isFavorite;
   await script.save();
@@ -171,10 +294,7 @@ const toggleFavorite = asyncHandler(async (req, res) => {
       message: script.isFavorite
         ? "Script added to favorites"
         : "Script removed from favorites",
-      data: {
-        id: script._id,
-        isFavorite: script.isFavorite,
-      },
+      data: { id: script._id, isFavorite: script.isFavorite },
     }),
   );
 });
@@ -188,14 +308,8 @@ const deleteScript = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
 
-  const script = await Script.findOneAndDelete({
-    _id: id,
-    userId,
-  });
-
-  if (!script) {
-    throw new NotFoundError("Script not found.");
-  }
+  const script = await Script.findOneAndDelete({ _id: id, userId });
+  if (!script) throw new NotFoundError("Script not found.");
 
   logger.info("Script deleted", { userId, scriptId: id });
 
@@ -233,6 +347,7 @@ const getStats = asyncHandler(async (req, res) => {
 
 module.exports = {
   generateScript,
+  regenerateSection,
   getHistory,
   getScriptById,
   toggleFavorite,

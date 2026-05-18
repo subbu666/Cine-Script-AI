@@ -159,7 +159,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
 
   res.status(201).json(
     ApiResponse.success({
-      message: "Account verified successfully! Welcome to Script Alchemy.",
+      message: "Account verified successfully! Welcome to Cine Script AI.",
       data: { user: user.toPublicProfile(), token },
     }),
   );

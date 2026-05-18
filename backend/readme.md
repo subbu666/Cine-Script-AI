@@ -27,9 +27,9 @@
 
 ---
 
-## What is Script Alchemy?
+## What is Cine Script AI?
 
-Script Alchemy is a **production-grade REST API** that transforms everyday situations into full cinematic scripts — complete with scenes, dialogue, and a title — powered by Groq's Llama 3.3 70B LLM. Users sign up with OTP-verified email, generate scripts in 8 moods, and manage their creative history.
+Cine Script AI is a **production-grade REST API** that transforms everyday situations into full cinematic scripts — complete with scenes, dialogue, and a title — powered by Groq's Llama 3.3 70B LLM. Users sign up with OTP-verified email, generate scripts in 8 moods, and manage their creative history.
 
 > _"A first date gone wrong"_ → a **romantic script** with 4 scenes, punchy dialogue, and a tagline that belongs on a movie poster.
 
@@ -219,7 +219,7 @@ All responses use a unified envelope:
 ```json
 {
   "success": true,
-  "message": "Account verified successfully! Welcome to Script Alchemy.",
+  "message": "Account verified successfully! Welcome to Cine Script AI.",
   "data": {
     "user": {
       "id": "64f1...",
