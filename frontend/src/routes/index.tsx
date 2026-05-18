@@ -30,6 +30,12 @@ export const Route = createFileRoute("/")({
   }),
 });
 
+/** Resolve the stable string id for a Script regardless of whether the
+ *  backend returned _id (Mongoose lean) or id (normalised). */
+function scriptId(s: Script): string {
+  return String((s as any)._id ?? s.id ?? "");
+}
+
 function Index() {
   const { user, loading: authLoading, justLoggedIn, consumeJustLoggedIn } = useAuth();
 
@@ -40,8 +46,6 @@ function Index() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
-
-  // ✅ NEW: Creator modal state
   const [creatorOpen, setCreatorOpen] = useState(false);
 
   // Show cinematic welcome modal once per login / signup
@@ -101,11 +105,20 @@ function Index() {
     }
   }
 
+  async function handleDeleteScript(id: string) {
+    await scriptApi.remove(id);
+    // Remove from history list
+    setHistory((prev) => prev.filter((s) => scriptId(s) !== id));
+    // If the currently displayed script is the deleted one, clear the view
+    if (script && scriptId(script) === id) {
+      setScript(null);
+    }
+  }
+
   if (authLoading) return null;
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
-      {/* ✅ Creator Modal */}
       <CreatorModal open={creatorOpen} onClose={() => setCreatorOpen(false)} />
 
       <Navbar onHistoryClick={() => setHistoryOpen(true)} />
@@ -150,7 +163,6 @@ function Index() {
         )}
       </main>
 
-      {/* ✅ UPDATED FOOTER WITH CREATOR BUTTON */}
       <footer className="relative z-10 border-t border-white/5 py-8 text-center">
         <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
           CineScript Studios · Crafted with <span className="text-gold">★</span> for cinema lovers
@@ -175,6 +187,7 @@ function Index() {
           setScript(s);
           setHistoryOpen(false);
         }}
+        onDelete={handleDeleteScript}
         onClear={() => setHistory([])}
       />
 

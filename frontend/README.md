@@ -23,9 +23,9 @@
 
 ---
 
-## What is CineScript?
+## What is CineScript AI?
 
-**CineScript** is a cinematic, premium React frontend that transforms everyday moments into full-blown Bollywood screenplays — complete with characters, dramatic scenes, and dialogue — powered by AI. Drop in a situation, pick a mood, and watch the magic unfold.
+**CineScript AI** is a cinematic, premium React frontend that transforms everyday moments into full-blown Bollywood screenplays — complete with characters, dramatic scenes, and dialogue — powered by AI. Drop in a situation, pick a mood, and watch the magic unfold.
 
 > _"I missed my train and met a stranger…"_ → a **Dramatic** script with characters, scenes, and lines worth putting on the big screen.
 
@@ -40,7 +40,7 @@
 | Styling     | Tailwind CSS + custom design tokens |
 | Animation   | Framer Motion                       |
 | HTTP Client | Fetch API via `src/lib/api.ts`      |
-| Runtime     | Bun                                 |
+| Runtime     | npm                                 |
 | Build       | Vite                                |
 
 ---
@@ -49,13 +49,13 @@
 
 ```bash
 # Install dependencies
-bun install
+npm install
 
 # Copy env template and fill in your backend URL
 cp .env.example .env
 
 # Start the dev server
-bun run dev
+npm run dev
 ```
 
 Open [http://localhost:8080](http://localhost:8080).
@@ -73,7 +73,7 @@ VITE_API_BASE_URL=http://localhost:5000/api
 
 | Variable            | Required | Description                            |
 | ------------------- | -------- | -------------------------------------- |
-| `VITE_API_BASE_URL` | Yes      | Base URL of the Script Alchemy backend |
+| `VITE_API_BASE_URL` | Yes      | Base URL of the Cine Script AI backend |
 
 > ⚠️ All `VITE_*` variables are **inlined at build time** and shipped to the browser — never store secrets here.
 
@@ -122,8 +122,6 @@ cinescript_frontend/
     │
     ├── styles.css                    # Design system tokens (gold / black)
     ├── router.tsx
-    ├── start.ts
-    ├── server.ts
     └── routeTree.gen.ts              # ⚠️ Auto-generated — do not edit
 ```
 
@@ -448,10 +446,6 @@ Any HTTP server implementing the contract above works. Recommended building bloc
 - **AI** — OpenAI / Gemini / Anthropic / Groq — generate the JSON shape returned by `/scripts/generate`
 - **Email** — Brevo / Resend / SendGrid for OTP delivery
 
-> See the [Script Alchemy Backend README](../backend/README.md) for a production-ready implementation using Node.js + Express + MongoDB + Groq.
+> See the [Cine Script AI Backend README](../backend/README.md) for a production-ready implementation using Node.js + Express + MongoDB + Groq.
 
 ---
-
-## License
-
-MIT © CineScript Team
