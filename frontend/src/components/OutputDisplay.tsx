@@ -175,7 +175,10 @@ function ShareModal({ scriptId, onClose }: ShareModalProps) {
     // Fire real API call in parallel
     try {
       const res = await scriptApi.share(scriptId);
-      const url = res.shareUrl || `${window.location.origin}/share/${res.shareToken}`;
+      // Normalise: if the API returns a relative path (e.g. "/share/token"),
+      // prepend the current origin so the displayed URL is always absolute.
+      const raw = res.shareUrl || `/share/${res.shareToken}`;
+      const url = raw.startsWith("http") ? raw : `${window.location.origin}${raw}`;
       setShareUrl(url);
       apiCallRef.current = true;
     } catch (e: any) {
